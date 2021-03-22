@@ -15,6 +15,6 @@ jobs:
       - name: Test migration
         run: |
           sleep 10
-          docker run --rm -it -e DATABASE_USER=vdbm -e DATABASE_PASSWORD=password \
+          docker run --rm --network host -e DATABASE_USER=vdbm -e DATABASE_PASSWORD=password \
           -e DATABASE_HOSTNAME=127.0.0.1 -e DATABASE_PORT=5432 -e DATABASE_NAME=vulcanize_public \
           vulcanize/statediff-migrations
