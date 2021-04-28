@@ -30,7 +30,7 @@ TEST_CONNECT_STRING = postgresql://$(USER)@$(HOST_NAME):$(PORT)/$(TEST_DB)?sslmo
 test: | $(GINKGO)
 	dropdb --if-exists $(TEST_DB)
 	createdb $(TEST_DB)
-	$(GOOSE) -dir db/migrations postgres "$(TEST_CONNECT_STRING)" up
+	make migrate NAME=$(TEST_DB)
 	$(GOOSE) -dir db/migrations postgres "$(TEST_CONNECT_STRING)" reset
 
 ## Build docker image
