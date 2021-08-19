@@ -51,4 +51,10 @@ CREATE INDEX log_topic3_index ON eth.log_cids USING btree (topic3);
 
 
 -- +goose Down
+DROP INDEX eth.log_topic0_index;
+DROP INDEX eth.log_topic1_index;
+DROP INDEX eth.log_topic2_index;
+DROP INDEX eth.log_topic3_index;
+DROP INDEX eth.log_rct_id_index;
+
 DROP TABLE eth.logs;
