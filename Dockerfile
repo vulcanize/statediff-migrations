@@ -1,4 +1,4 @@
-FROM golang:1.13-alpine as builder
+FROM golang:1.16-alpine as builder
 
 RUN apk --update --no-cache add make git g++ linux-headers
 # DEBUG
@@ -7,8 +7,8 @@ RUN apk add busybox-extras
 ADD . /go/src/github.com/vulcanize/statediff-migrations
 
 # Build migration tool
-WORKDIR /
-RUN go get -u -d github.com/pressly/goose/cmd/goose
+WORKDIR /go/src/github.com/pressly
+RUN git clone https://github.com/pressly/goose.git
 WORKDIR /go/src/github.com/pressly/goose/cmd/goose
 RUN GCO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -tags='no_mysql no_sqlite' -o goose .
 
