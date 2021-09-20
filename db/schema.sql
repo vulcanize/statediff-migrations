@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14beta3
--- Dumped by pg_dump version 14beta3
+-- Dumped from database version 10.12
+-- Dumped by pg_dump version 13.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -24,8 +24,6 @@ CREATE SCHEMA eth;
 
 
 SET default_tablespace = '';
-
-SET default_table_access_method = heap;
 
 --
 -- Name: header_cids; Type: TABLE; Schema: eth; Owner: -
@@ -102,6 +100,33 @@ begin
     return new;
 end;
 $_$;
+
+
+--
+-- Name: canonical_header(bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.canonical_header(height bigint) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  current_weight INT;
+  heaviest_weight INT DEFAULT 0;
+  heaviest_id INT;
+  r eth.header_cids%ROWTYPE;
+BEGIN
+  FOR r IN SELECT * FROM eth.header_cids
+  WHERE block_number = height
+  LOOP
+    SELECT INTO current_weight * FROM header_weight(r.block_hash);
+    IF current_weight > heaviest_weight THEN
+        heaviest_weight := current_weight;
+        heaviest_id := r.id;
+    END IF;
+  END LOOP;
+  RETURN heaviest_id;
+END
+$$;
 
 
 --
@@ -191,6 +216,17 @@ $$;
 
 
 --
+-- Name: ethHeaderCidByBlockNumber(bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public."ethHeaderCidByBlockNumber"(n bigint) RETURNS SETOF eth.header_cids
+    LANGUAGE sql STABLE
+    AS $_$
+SELECT * FROM eth.header_cids WHERE block_number=$1 ORDER BY id
+$_$;
+
+
+--
 -- Name: has_child(character varying, bigint); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -218,8 +254,30 @@ BEGIN
       new_child_result.children = array_append(new_child_result.children, temp_child);
     END LOOP;
   END IF;
-RETURN new_child_result;
+  RETURN new_child_result;
 END
+$$;
+
+
+--
+-- Name: header_weight(character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.header_weight(hash character varying) RETURNS bigint
+    LANGUAGE sql
+    AS $$
+  WITH RECURSIVE validator AS (
+          SELECT block_hash, parent_hash, block_number
+          FROM eth.header_cids
+          WHERE block_hash = hash
+      UNION
+          SELECT eth.header_cids.block_hash, eth.header_cids.parent_hash, eth.header_cids.block_number
+          FROM eth.header_cids
+          INNER JOIN validator
+            ON eth.header_cids.parent_hash = validator.block_hash
+            AND eth.header_cids.block_number = validator.block_number + 1
+  )
+  SELECT COUNT(*) FROM validator;
 $$;
 
 
@@ -326,7 +384,7 @@ CREATE TABLE eth.log_cids (
     leaf_cid text NOT NULL,
     leaf_mh_key text NOT NULL,
     receipt_id integer NOT NULL,
-    address character varying(66),
+    address character varying(66) NOT NULL,
     log_data bytea,
     index integer NOT NULL,
     topic0 character varying(66),
@@ -363,8 +421,8 @@ ALTER SEQUENCE eth.log_cids_id_seq OWNED BY eth.log_cids.id;
 CREATE TABLE eth.receipt_cids (
     id integer NOT NULL,
     tx_id integer NOT NULL,
-    cid text NOT NULL,
-    mh_key text NOT NULL,
+    leaf_cid text NOT NULL,
+    leaf_mh_key text NOT NULL,
     contract character varying(66),
     contract_hash character varying(66),
     post_state character varying(66),
@@ -1012,13 +1070,6 @@ CREATE INDEX log_topic3_index ON eth.log_cids USING btree (topic3);
 
 
 --
--- Name: rct_cid_index; Type: INDEX; Schema: eth; Owner: -
---
-
-CREATE INDEX rct_cid_index ON eth.receipt_cids USING btree (cid);
-
-
---
 -- Name: rct_contract_hash_index; Type: INDEX; Schema: eth; Owner: -
 --
 
@@ -1033,10 +1084,17 @@ CREATE INDEX rct_contract_index ON eth.receipt_cids USING btree (contract);
 
 
 --
--- Name: rct_mh_index; Type: INDEX; Schema: eth; Owner: -
+-- Name: rct_leaf_cid_index; Type: INDEX; Schema: eth; Owner: -
 --
 
-CREATE INDEX rct_mh_index ON eth.receipt_cids USING btree (mh_key);
+CREATE INDEX rct_leaf_cid_index ON eth.receipt_cids USING btree (leaf_mh_key);
+
+
+--
+-- Name: rct_leaf_mh_key_index; Type: INDEX; Schema: eth; Owner: -
+--
+
+CREATE INDEX rct_leaf_mh_key_index ON eth.receipt_cids USING btree (leaf_cid);
 
 
 --
@@ -1197,49 +1255,49 @@ CREATE INDEX tx_src_index ON eth.transaction_cids USING btree (src);
 -- Name: header_cids header_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER header_cids_ai AFTER INSERT ON eth.header_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('header_cids', 'id');
+CREATE TRIGGER header_cids_ai AFTER INSERT ON eth.header_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('header_cids', 'id');
 
 
 --
 -- Name: receipt_cids receipt_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER receipt_cids_ai AFTER INSERT ON eth.receipt_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('receipt_cids', 'id');
+CREATE TRIGGER receipt_cids_ai AFTER INSERT ON eth.receipt_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('receipt_cids', 'id');
 
 
 --
 -- Name: state_accounts state_accounts_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER state_accounts_ai AFTER INSERT ON eth.state_accounts FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('state_accounts', 'id');
+CREATE TRIGGER state_accounts_ai AFTER INSERT ON eth.state_accounts FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('state_accounts', 'id');
 
 
 --
 -- Name: state_cids state_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER state_cids_ai AFTER INSERT ON eth.state_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('state_cids', 'id');
+CREATE TRIGGER state_cids_ai AFTER INSERT ON eth.state_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('state_cids', 'id');
 
 
 --
 -- Name: storage_cids storage_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER storage_cids_ai AFTER INSERT ON eth.storage_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('storage_cids', 'id');
+CREATE TRIGGER storage_cids_ai AFTER INSERT ON eth.storage_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('storage_cids', 'id');
 
 
 --
 -- Name: transaction_cids transaction_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER transaction_cids_ai AFTER INSERT ON eth.transaction_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('transaction_cids', 'id');
+CREATE TRIGGER transaction_cids_ai AFTER INSERT ON eth.transaction_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('transaction_cids', 'id');
 
 
 --
 -- Name: uncle_cids uncle_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER uncle_cids_ai AFTER INSERT ON eth.uncle_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('uncle_cids', 'id');
+CREATE TRIGGER uncle_cids_ai AFTER INSERT ON eth.uncle_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('uncle_cids', 'id');
 
 
 --
@@ -1287,7 +1345,7 @@ ALTER TABLE ONLY eth.log_cids
 --
 
 ALTER TABLE ONLY eth.receipt_cids
-    ADD CONSTRAINT receipt_cids_mh_key_fkey FOREIGN KEY (mh_key) REFERENCES public.blocks(key) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT receipt_cids_mh_key_fkey FOREIGN KEY (leaf_mh_key) REFERENCES public.blocks(key) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 --
