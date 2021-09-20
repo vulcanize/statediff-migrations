@@ -18,3 +18,7 @@ jobs:
           docker run --rm --network host -e DATABASE_USER=vdbm -e DATABASE_PASSWORD=password \
           -e DATABASE_HOSTNAME=127.0.0.1 -e DATABASE_PORT=5432 -e DATABASE_NAME=vulcanize_public \
           vulcanize/statediff-migrations
+      - name: Verify schema is latest
+        run: |
+          PGPASSWORD="password" pg_dump -h localhost -p 5432 -U vdbm vulcanize_public --no-owner --schema-only > schema.sql
+          ./scripts/check_diff.sh
