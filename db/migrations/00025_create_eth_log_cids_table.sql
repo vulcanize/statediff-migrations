@@ -14,6 +14,12 @@ CREATE TABLE eth.log_cids (
     UNIQUE (receipt_id, index)
 );
 
+DROP INDEX eth.rct_log_contract_index;
+DROP INDEX eth.rct_topic3_index;
+DROP INDEX eth.rct_topic2_index;
+DROP INDEX eth.rct_topic1_index;
+DROP INDEX eth.rct_topic0_index;
+
 ALTER TABLE eth.receipt_cids
 DROP COLUMN topic0s,
 DROP COLUMN topic1s,
@@ -55,7 +61,6 @@ CREATE INDEX log_topic2_index ON eth.log_cids USING btree (topic2);
 
 CREATE INDEX log_topic3_index ON eth.log_cids USING btree (topic3);
 
-
 -- +goose Down
 -- log indexes
 DROP INDEX eth.log_mh_index;
@@ -65,5 +70,29 @@ DROP INDEX eth.log_topic1_index;
 DROP INDEX eth.log_topic2_index;
 DROP INDEX eth.log_topic3_index;
 DROP INDEX eth.log_rct_id_index;
+
+ALTER TABLE eth.receipt_cids
+DROP COLUMN log_root;
+
+ALTER TABLE eth.receipt_cids
+ADD COLUMN log_contracts VARCHAR(66)[];
+
+ALTER TABLE eth.receipt_cids
+ADD COLUMN topic3s VARCHAR(66)[];
+
+ALTER TABLE eth.receipt_cids
+ADD COLUMN topic2s VARCHAR(66)[];
+
+ALTER TABLE eth.receipt_cids
+ADD COLUMN topic1s VARCHAR(66)[];
+
+ALTER TABLE eth.receipt_cids
+ADD COLUMN topic0s VARCHAR(66)[];
+
+CREATE INDEX rct_topic0_index ON eth.receipt_cids USING gin (topic0s);
+CREATE INDEX rct_topic1_index ON eth.receipt_cids USING gin (topic1s);
+CREATE INDEX rct_topic2_index ON eth.receipt_cids USING gin (topic2s);
+CREATE INDEX rct_topic3_index ON eth.receipt_cids USING gin (topic3s);
+CREATE INDEX rct_log_contract_index ON eth.receipt_cids USING gin (log_contracts);
 
 DROP TABLE eth.log_cids;
