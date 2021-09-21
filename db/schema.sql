@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.12
--- Dumped by pg_dump version 13.4 (Ubuntu 13.4-1.pgdg20.04+1)
+-- Dumped from database version 14beta3
+-- Dumped by pg_dump version 14beta3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -24,6 +24,8 @@ CREATE SCHEMA eth;
 
 
 SET default_tablespace = '';
+
+SET default_table_access_method = heap;
 
 --
 -- Name: header_cids; Type: TABLE; Schema: eth; Owner: -
@@ -1038,14 +1040,14 @@ CREATE INDEX rct_contract_index ON eth.receipt_cids USING btree (contract);
 -- Name: rct_leaf_cid_index; Type: INDEX; Schema: eth; Owner: -
 --
 
-CREATE INDEX rct_leaf_cid_index ON eth.receipt_cids USING btree (leaf_mh_key);
+CREATE INDEX rct_leaf_cid_index ON eth.receipt_cids USING btree (leaf_cid);
 
 
 --
 -- Name: rct_leaf_mh_key_index; Type: INDEX; Schema: eth; Owner: -
 --
 
-CREATE INDEX rct_leaf_mh_key_index ON eth.receipt_cids USING btree (leaf_cid);
+CREATE INDEX rct_leaf_mh_key_index ON eth.receipt_cids USING btree (leaf_mh_key);
 
 
 --
@@ -1206,49 +1208,49 @@ CREATE INDEX tx_src_index ON eth.transaction_cids USING btree (src);
 -- Name: header_cids header_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER header_cids_ai AFTER INSERT ON eth.header_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('header_cids', 'id');
+CREATE TRIGGER header_cids_ai AFTER INSERT ON eth.header_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('header_cids', 'id');
 
 
 --
 -- Name: receipt_cids receipt_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER receipt_cids_ai AFTER INSERT ON eth.receipt_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('receipt_cids', 'id');
+CREATE TRIGGER receipt_cids_ai AFTER INSERT ON eth.receipt_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('receipt_cids', 'id');
 
 
 --
 -- Name: state_accounts state_accounts_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER state_accounts_ai AFTER INSERT ON eth.state_accounts FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('state_accounts', 'id');
+CREATE TRIGGER state_accounts_ai AFTER INSERT ON eth.state_accounts FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('state_accounts', 'id');
 
 
 --
 -- Name: state_cids state_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER state_cids_ai AFTER INSERT ON eth.state_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('state_cids', 'id');
+CREATE TRIGGER state_cids_ai AFTER INSERT ON eth.state_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('state_cids', 'id');
 
 
 --
 -- Name: storage_cids storage_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER storage_cids_ai AFTER INSERT ON eth.storage_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('storage_cids', 'id');
+CREATE TRIGGER storage_cids_ai AFTER INSERT ON eth.storage_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('storage_cids', 'id');
 
 
 --
 -- Name: transaction_cids transaction_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER transaction_cids_ai AFTER INSERT ON eth.transaction_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('transaction_cids', 'id');
+CREATE TRIGGER transaction_cids_ai AFTER INSERT ON eth.transaction_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('transaction_cids', 'id');
 
 
 --
 -- Name: uncle_cids uncle_cids_ai; Type: TRIGGER; Schema: eth; Owner: -
 --
 
-CREATE TRIGGER uncle_cids_ai AFTER INSERT ON eth.uncle_cids FOR EACH ROW EXECUTE PROCEDURE eth.graphql_subscription('uncle_cids', 'id');
+CREATE TRIGGER uncle_cids_ai AFTER INSERT ON eth.uncle_cids FOR EACH ROW EXECUTE FUNCTION eth.graphql_subscription('uncle_cids', 'id');
 
 
 --
