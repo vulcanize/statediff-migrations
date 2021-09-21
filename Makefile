@@ -43,3 +43,8 @@ docker-build:
 migrate: $(GOOSE) checkdbvars
 	$(GOOSE) -dir db/migrations postgres "$(CONNECT_STRING)" up
 	pg_dump -O -s $(CONNECT_STRING) > db/schema.sql
+
+## Apply all DOWN migrations
+.PHONY: down
+down: $(GOOSE) checkdbvars
+	$(GOOSE) -dir db/migrations postgres "$(CONNECT_STRING)" down
