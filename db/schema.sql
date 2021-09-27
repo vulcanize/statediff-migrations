@@ -237,24 +237,16 @@ $$;
 --
 
 CREATE FUNCTION public.was_state_leaf_removed(key character varying, hash character varying) RETURNS boolean
-    LANGUAGE plpgsql
+    LANGUAGE sql
     AS $$
-DECLARE
-    rec RECORD;
-BEGIN
-    FOR rec IN SELECT state_cids.node_type
-               FROM eth.state_cids
-                        INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
-               WHERE state_leaf_key = key
-                 AND block_number <= (SELECT block_number FROM eth.header_cids WHERE block_hash = hash)
-               ORDER BY state_cids.id DESC LIMIT 1
-        LOOP
-            IF rec.node_type = 3 THEN
-                RETURN TRUE;
-            END IF;
-        END LOOP;
-    RETURN FALSE;
-END;
+    SELECT state_cids.node_type = 3
+    FROM eth.state_cids
+             INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
+    WHERE state_leaf_key = key
+      AND block_number <= (SELECT block_number
+                           FROM eth.header_cids
+                           WHERE block_hash = hash)
+    ORDER BY block_number DESC LIMIT 1;
 $$;
 
 
