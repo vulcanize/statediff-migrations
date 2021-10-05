@@ -1310,11 +1310,11 @@ ALTER TABLE ONLY eth.log_cids
 
 
 --
--- Name: receipt_cids receipt_cids_mh_key_fkey; Type: FK CONSTRAINT; Schema: eth; Owner: -
+-- Name: receipt_cids receipt_cids_leaf_mh_key_fkey;;; Type: FK CONSTRAINT; Schema: eth; Owner: -
 --
 
 ALTER TABLE ONLY eth.receipt_cids
-    ADD CONSTRAINT receipt_cids_mh_key_fkey FOREIGN KEY (leaf_mh_key) REFERENCES public.blocks(key) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT receipt_cids_leaf_mh_key_fkey FOREIGN KEY (leaf_mh_key) REFERENCES public.blocks(key) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 --
