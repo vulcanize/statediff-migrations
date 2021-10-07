@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 10.12
--- Dumped by pg_dump version 13.4 (Ubuntu 13.4-1.pgdg20.04+1)
+-- Dumped by pg_dump version 14.0 (Ubuntu 14.0-1.pgdg20.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -189,17 +189,6 @@ $$;
 
 
 --
--- Name: ethHeaderCidByBlockNumber(bigint); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public."ethHeaderCidByBlockNumber"(n bigint) RETURNS SETOF eth.header_cids
-    LANGUAGE sql STABLE
-    AS $_$
-SELECT * FROM eth.header_cids WHERE block_number=$1 ORDER BY id
-$_$;
-
-
---
 -- Name: has_child(character varying, bigint); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -247,47 +236,6 @@ CREATE FUNCTION public.was_state_leaf_removed(key character varying, hash charac
                            FROM eth.header_cids
                            WHERE block_hash = hash)
     ORDER BY block_number DESC LIMIT 1;
-$$;
-
-
---
--- Name: was_state_removed(bytea, bigint, character varying); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.was_state_removed(path bytea, height bigint, hash character varying) RETURNS boolean
-    LANGUAGE sql
-    AS $$
-SELECT exists(SELECT 1
-              FROM eth.state_cids
-                INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
-              WHERE state_path = path
-                AND block_number > height
-                AND block_number <= (SELECT block_number
-                                     FROM eth.header_cids
-                                     WHERE block_hash = hash)
-                AND state_cids.node_type = 3
-              LIMIT 1);
-$$;
-
-
---
--- Name: was_storage_removed(bytea, bigint, character varying); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.was_storage_removed(path bytea, height bigint, hash character varying) RETURNS boolean
-    LANGUAGE sql
-    AS $$
-SELECT exists(SELECT 1
-              FROM eth.storage_cids
-                INNER JOIN eth.state_cids ON (storage_cids.state_id = state_cids.id)
-                INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
-              WHERE storage_path = path
-                AND block_number > height
-                AND block_number <= (SELECT block_number
-                                     FROM eth.header_cids
-                                     WHERE block_hash = hash)
-                AND storage_cids.node_type = 3
-              LIMIT 1);
 $$;
 
 
@@ -1056,14 +1004,14 @@ CREATE INDEX rct_contract_index ON eth.receipt_cids USING btree (contract);
 -- Name: rct_leaf_cid_index; Type: INDEX; Schema: eth; Owner: -
 --
 
-CREATE INDEX rct_leaf_cid_index ON eth.receipt_cids USING btree (leaf_mh_key);
+CREATE INDEX rct_leaf_cid_index ON eth.receipt_cids USING btree (leaf_cid);
 
 
 --
--- Name: rct_leaf_mh_key_index; Type: INDEX; Schema: eth; Owner: -
+-- Name: rct_leaf_mh_index; Type: INDEX; Schema: eth; Owner: -
 --
 
-CREATE INDEX rct_leaf_mh_key_index ON eth.receipt_cids USING btree (leaf_cid);
+CREATE INDEX rct_leaf_mh_index ON eth.receipt_cids USING btree (leaf_mh_key);
 
 
 --
@@ -1310,11 +1258,11 @@ ALTER TABLE ONLY eth.log_cids
 
 
 --
--- Name: receipt_cids receipt_cids_mh_key_fkey; Type: FK CONSTRAINT; Schema: eth; Owner: -
+-- Name: receipt_cids receipt_cids_leaf_mh_key_fkey; Type: FK CONSTRAINT; Schema: eth; Owner: -
 --
 
 ALTER TABLE ONLY eth.receipt_cids
-    ADD CONSTRAINT receipt_cids_mh_key_fkey FOREIGN KEY (leaf_mh_key) REFERENCES public.blocks(key) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT receipt_cids_leaf_mh_key_fkey FOREIGN KEY (leaf_mh_key) REFERENCES public.blocks(key) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 --
