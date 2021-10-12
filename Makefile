@@ -3,8 +3,7 @@ BIN = $(GOPATH)/bin
 ## Migration tool
 GOOSE = $(BIN)/goose
 $(BIN)/goose:
-	go get -u -d github.com/pressly/goose/cmd/goose
-	go build -tags='no_mysql no_sqlite' -o $(BIN)/goose github.com/pressly/goose/cmd/goose
+	go get -u github.com/pressly/goose/cmd/goose
 
 #Database
 HOST_NAME = localhost
@@ -43,3 +42,7 @@ docker-build:
 migrate: $(GOOSE) checkdbvars
 	$(GOOSE) -dir db/migrations postgres "$(CONNECT_STRING)" up
 	pg_dump -O -s $(CONNECT_STRING) > db/schema.sql
+
+.PHONY: test-migrations
+test-migrations: $(GOOSE)
+	./scripts/test_migration.sh

@@ -21,4 +21,25 @@ jobs:
       - name: Verify schema is latest
         run: |
           PGPASSWORD="password" pg_dump -h localhost -p 5432 -U vdbm vulcanize_public --no-owner --schema-only > schema.sql
-          ./scripts/check_diff.sh
+          ./scripts/check_diff.sh db/schema.sql schema.sql
+
+  migration:
+    name: Compare up and down migration
+    env:
+      GOPATH: /tmp/go
+    strategy:
+      matrix:
+        go-version: [ 1.16.x ]
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Create GOPATH
+        run: mkdir -p /tmp/go
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - uses: actions/checkout@v2
+      - name: Test migration
+        run: |
+          timeout 5m make test-migrations
