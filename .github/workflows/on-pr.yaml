@@ -21,4 +21,7 @@ jobs:
       - name: Verify schema is latest
         run: |
           PGPASSWORD="password" pg_dump -h localhost -p 5432 -U vdbm vulcanize_public --no-owner --schema-only > schema.sql
-          ./scripts/check_diff.sh
+          ./scripts/check_diff.sh db/schema.sql schema.sql
+      - name: Verify up and down migration
+        run: |
+          timeout 5m ./scripts/test_migration.sh

@@ -27,8 +27,8 @@ CREATE OR REPLACE FUNCTION was_storage_removed(path BYTEA, height BIGINT, hash V
 AS $$
 SELECT exists(SELECT 1
               FROM eth.storage_cids
-                       INNER JOIN eth.state_cids ON (storage_cids.state_id = state_cids.id)
-                       INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
+                INNER JOIN eth.state_cids ON (storage_cids.state_id = state_cids.id)
+                INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
               WHERE storage_path = path
                 AND block_number > height
                 AND block_number <= (SELECT block_number
@@ -45,7 +45,7 @@ CREATE OR REPLACE FUNCTION was_state_removed(path BYTEA, height BIGINT, hash VAR
 AS $$
 SELECT exists(SELECT 1
               FROM eth.state_cids
-                       INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
+                INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
               WHERE state_path = path
                 AND block_number > height
                 AND block_number <= (SELECT block_number
