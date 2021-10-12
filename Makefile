@@ -43,3 +43,7 @@ docker-build:
 migrate: $(GOOSE) checkdbvars
 	$(GOOSE) -dir db/migrations postgres "$(CONNECT_STRING)" up
 	pg_dump -O -s $(CONNECT_STRING) > db/schema.sql
+
+.PHONY: test-migrations
+test-migrations: $(GOOSE)
+	./scripts/test_migration.sh

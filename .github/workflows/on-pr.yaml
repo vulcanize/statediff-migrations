@@ -24,4 +24,4 @@ jobs:
           ./scripts/check_diff.sh db/schema.sql schema.sql
       - name: Verify up and down migration
         run: |
-          timeout 5m ./scripts/test_migration.sh
+          timeout 5m make test-migrations
