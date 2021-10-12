@@ -22,6 +22,10 @@ jobs:
         run: |
           PGPASSWORD="password" pg_dump -h localhost -p 5432 -U vdbm vulcanize_public --no-owner --schema-only > schema.sql
           ./scripts/check_diff.sh db/schema.sql schema.sql
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
       - name: Verify up and down migration
         run: |
           timeout 5m make test-migrations
