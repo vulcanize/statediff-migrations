@@ -19,6 +19,11 @@ Count=$(find ./db/migrations -name "*sql" -type f | wc -l | awk '{print $1}')
 
 goose -dir ./db/migrations postgres "$TEST_CONNECT_STRING" status
 
+clean_up () {
+    rm schema*.sql
+}
+trap clean_up EXIT
+
 while true;
 do
     pg_dump -h localhost -p $PORT -U $USER $TEST_DB --no-owner --schema-only > schema1.sql
@@ -30,12 +35,12 @@ do
 
     pg_dump -h localhost -p $PORT -U $USER $TEST_DB  --no-owner --schema-only > schema2.sql
 
-    if ! ./scripts/check_diff.sh schema1.sql schema2.sql;
+    if ! ./scripts/check_diff.sh schema1.sql schema2.sql &> /dev/null;
     then
         # Column names are reordered when they are added back.
         sed "s/\,//" schema1.sql | sort > schema1-sorted.sql
         sed "s/\,//" schema2.sql | sort > schema2-sorted.sql
-        if ! ./scripts/check_diff.sh schema1-sorted.sql schema2-sorted.sql;
+        if ! ./scripts/check_diff.sh schema1-sorted.sql schema2-sorted.sql &> /dev/null;
         then
             echo "Up and Down migrations doesn't match for this migrations"
             exit 1
@@ -50,6 +55,3 @@ do
         exit 0
     fi
 done
-
-# cleaning up
-rm schema*.sql
